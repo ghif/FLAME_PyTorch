@@ -26,12 +26,13 @@ import trimesh
 
 from flame_pytorch import FLAME, get_config
 
+device = torch.device("mps" if torch.cuda.is_available() else "cpu")
 config = get_config()
 radian = np.pi / 180.0
-flamelayer = FLAME(config)
+flamelayer = FLAME(config).to(device)
 
 # Creating a batch of mean shapes
-shape_params = torch.zeros(8, 100).cuda()
+shape_params = torch.zeros(8, 100, device=device)
 
 # Creating a batch of different global poses
 # pose_params_numpy[:, :3] : global rotaation
@@ -49,11 +50,10 @@ pose_params_numpy = np.array(
     ],
     dtype=np.float32,
 )
-pose_params = torch.tensor(pose_params_numpy, dtype=torch.float32).cuda()
+pose_params = torch.tensor(pose_params_numpy, dtype=torch.float32)
 
 # Cerating a batch of neutral expressions
-expression_params = torch.zeros(8, 50, dtype=torch.float32).cuda()
-flamelayer.cuda()
+expression_params = torch.zeros(8, 50, dtype=torch.float32, device=device)
 
 # Forward Pass of FLAME, one can easily use this as a layer in a Deep learning Framework
 vertice, landmark = flamelayer(
@@ -62,8 +62,8 @@ vertice, landmark = flamelayer(
 print(vertice.size(), landmark.size())
 
 if config.optimize_eyeballpose and config.optimize_neckpose:
-    neck_pose = torch.zeros(8, 3).cuda()
-    eye_pose = torch.zeros(8, 6).cuda()
+    neck_pose = torch.zeros(8, 3, device=device)
+    eye_pose = torch.zeros(8, 6, device=device)
     vertice, landmark = flamelayer(
         shape_params, expression_params, pose_params, neck_pose, eye_pose
     )
